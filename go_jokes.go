@@ -28,17 +28,22 @@ type Joke struct {
     }
 }
 
+//Declare global variables
+var (
+    f *os.File
+    err error
+)
+
 /**************************************************
-Name 		: init_log
+Name 		: initLog
 Description 	: To initialize the logger object
 ***************************************************/
-func init_log() {
+func initLog() {
 
-    f, err := os.OpenFile("/var/log/test_server.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)   //
+    f, err = os.OpenFile("/var/log/test_server.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)   //
     if err != nil {
-        log.Fatalf("error opening file: %v", err)
+        log.Fatal(err)
     }
-    defer f.Close()
     
     log.SetOutput(f) // setting file object as the logging stream
     log.Println("Start Logging..")
@@ -46,13 +51,13 @@ func init_log() {
     
 }
 /*********************************************************
-Name            : server_HTTP
+Name            : serverHTTP
 Description     : Handler for HTTP requests to this server
 **********************************************************/
-func server_HTTP(responseWriter http.ResponseWriter, request *http.Request) {
+func serverHTTP(responseWriter http.ResponseWriter, request *http.Request) {
 
-    url_uinames := "http://uinames.com/api/"
-    response, err := http.Get(url_uinames)
+    urlUinames := "http://uinames.com/api/"
+    response, err := http.Get(urlUinames)
 
     if err != nil {
         log.Fatal(err)
@@ -67,18 +72,22 @@ func server_HTTP(responseWriter http.ResponseWriter, request *http.Request) {
     }
  
     responseString := string(responseData)
+    log.Println("Response string from names api: ",responseString)
     bytes := []byte(responseString)
-    var person1 Person
-    json.Unmarshal(bytes, &person1)
-	fname := person1.Name
-	lname := person1.Surname
-        log.Println("Person name from uinames.com: %s %s",fname,lname) 
-	urlstr := "http://api.icndb.com/jokes/random?firstName=%s&lastName=%s"
-	u, _ := url.Parse(urlstr)
-	values, _ := url.ParseQuery(u.RawQuery)
-	values.Set("firstName",fname)
-	values.Set("lastName",lname)
-	u.RawQuery = values.Encode()
+    var personObj Person
+    json.Unmarshal(bytes, &personObj)
+    fname := personObj.Name
+    lname := personObj.Surname
+    gender := personObj.Gender
+    region := personObj.Region
+    log.Println("Person name from uinames.com: ",fname, lname) 
+    log.Println("Person gender and region from uinames.com: ",gender, region) 
+    urlstr := "http://api.icndb.com/jokes/random?firstName=%s&lastName=%s"
+    u, _ := url.Parse(urlstr)
+    values, _ := url.ParseQuery(u.RawQuery)
+    values.Set("firstName",fname)
+    values.Set("lastName",lname)
+    u.RawQuery = values.Encode()
     response, err = http.Get(u.String())
 
     if err != nil {
@@ -92,11 +101,12 @@ func server_HTTP(responseWriter http.ResponseWriter, request *http.Request) {
     }
  
     responseString = string(responseData)
+    log.Println("Response string from jokes api: ",responseString)
     bytes = []byte(responseString)
-    var joke1 Joke
-    json.Unmarshal(bytes, &joke1)
-    joke_text := joke1.Value.Joke
-    fmt.Fprint(responseWriter, joke_text)
+    var jokeObj Joke
+    json.Unmarshal(bytes, &jokeObj)
+    jokeText := jokeObj.Value.Joke
+    fmt.Fprint(responseWriter, jokeText)
 }
 /*********************************************************
 Name            : main
@@ -104,19 +114,13 @@ Description     : Main function for HTTP server
 **********************************************************/
 func main() {
     // Initializing logging mechanism
-    init_log()
-
-
-
-
-
-
-
-
+    initLog()
+    defer f.Close()
 
     // Initializing HTTP handler
-    http.HandleFunc("/", server_HTTP)
-    if err := http.ListenAndServe(":8080", nil); err != nil {
+    http.HandleFunc("/", serverHTTP)
+    err := http.ListenAndServe(":8080", nil) 
+    if err != nil {
         log.Fatal(err)
     }
 }
