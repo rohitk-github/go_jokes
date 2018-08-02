@@ -11,8 +11,12 @@ Free 8080 Port.
 
 Clone the project and just run the go code.
 
-go run go_jokes.go
+sudo go run go_jokes.go
 
 Now, fire your browser and type in http://localhost:8080
 
 You will be greeted with a Joke. Didn't like it ? Refresh the page to load a new joke.
+
+### Logging
+
+Log file can be found at /var/log/test_server.log
